@@ -1,0 +1,201 @@
+---
+replicas: 1
+
+logstashConfig:
+  logstash.yml: |
+    http.host: "0.0.0.0"
+    path.config: /usr/share/logstash/pipeline
+    pipeline.ecs_compatibility: disabled
+
+logstashPipeline:
+  logstash.conf: |
+    input {
+      beats {
+        port => 5044
+       }
+    }
+
+    output {
+      elasticsearch {
+        hosts => ["elasticsearch-master:9200"]
+        index => "logstash-%{[@metadata][version]}-%{+YYYY.MM.dd}"
+      }
+    }
+
+logstashPatternDir: "/usr/share/logstash/patterns/"
+logstashPattern: {}
+
+extraEnvs: []
+
+envFrom: []
+
+secrets: []
+
+secretMounts: []
+#  - name: "elastic-certificates"
+#    secretName: "elastic-certificates"
+#    path: "/usr/share/logstash/config/certs"
+#    defaultMode: "0755"
+
+hostAliases: []
+
+image: "docker.elastic.co/logstash/logstash"
+imageTag: "7.17.3"
+imagePullPolicy: "IfNotPresent"
+imagePullSecrets: []
+
+podAnnotations: {}
+
+labels: {}
+
+logstashJavaOpts: "-Xmx1g -Xms1g"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "800M"
+  limits:
+    cpu: "400m"
+    memory: "1500M"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 100M
+
+rbac:
+  create: false
+  serviceAccountAnnotations: {}
+  serviceAccountName: ""
+  annotations: {}
+
+podSecurityPolicy:
+  create: false
+  name: ""
+  spec:
+    privileged: false
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - secret
+      - configMap
+      - persistentVolumeClaim
+
+persistence:
+  enabled: true
+  annotations: {}
+
+extraVolumes: []
+
+extraVolumeMounts: []
+
+extraContainers: []
+
+extraInitContainers: 
+  - name: file-permissions
+    image: busybox
+    command: ['chown', '-R', '1000:1000', '/usr/share/logstash/']
+    volumeMounts:
+      - mountPath: /usr/share/logstash/data
+        name: logstash-logstash
+    securityContext:
+      privileged: true
+      runAsUser: 0
+
+priorityClassName: ""
+
+antiAffinityTopologyKey: "kubernetes.io/hostname"
+
+antiAffinity: "hard"
+
+nodeAffinity: {}
+
+podAffinity: {}
+
+podManagementPolicy: "Parallel"
+
+httpPort: 9600
+
+extraPorts: []
+
+updateStrategy: RollingUpdate
+
+maxUnavailable: 1
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+
+terminationGracePeriod: 120
+
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 300
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 60
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 3
+
+schedulerName: ""
+
+nodeSelector: {}
+tolerations: []
+
+nameOverride: ""
+fullnameOverride: ""
+
+lifecycle: {}
+
+service:
+  annotations: {}
+  type: ClusterIP
+  loadBalancerIP: ""
+  ports:
+    - name: beats
+      port: 5044
+      protocol: TCP
+      targetPort: 5044
+    - name: http
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+
+ingress:
+  enabled: false
+  annotations: {}
+  className: "nginx"
+  pathtype: ImplementationSpecific
+  hosts:
+    - host: logstash-example.local
+      paths:
+        - path: /beats
+          servicePort: 5044
+        - path: /http
+          servicePort: 8080
+  tls: []

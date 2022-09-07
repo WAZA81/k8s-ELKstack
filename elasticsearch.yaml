@@ -1,0 +1,234 @@
+---
+clusterName: "elasticsearch"
+nodeGroup: "master"
+
+masterService: ""
+
+roles:
+  master: "true"
+  data: "true"
+  ingest: "true"
+  remote_cluster_client: "true"
+  ml: "true"
+
+replicas: 1
+minimumMasterNodes: 0
+
+esMajorVersion: "7"
+
+clusterDeprecationIndexing: "false"
+
+esConfig: {}
+#  elasticsearch.yml: |
+#    xpack.security.enabled: "true"
+#     xpack.security.transport.ssl.enabled: "true"
+#     xpack.security.transport.ssl.supported_protocols: "TLSv1.2"
+#     xpack.security.transport.ssl.client_authentication: "none"
+#     xpack.security.transport.ssl.key: "/usr/share/elasticsearch/config/certs/tls.key"
+#     xpack.security.transport.ssl.certificate: "/usr/share/elasticsearch/config/certs/tls.crt"
+#     xpack.security.transport.ssl.certificate_authorities: "/usr/share/elasticsearch/config/certs/homelab-ca.crt"
+#     xpack.security.transport.ssl.verification_mode: "certificate"
+#     xpack.security.http.ssl.enabled: "true"
+#     xpack.security.http.ssl.supported_protocols: "TLSv1.2"
+#     xpack.security.http.ssl.client_authentication: "none"
+#     xpack.security.http.ssl.key: "/usr/share/elasticsearch/config/certs/tls.key"
+#     xpack.security.http.ssl.certificate: "/usr/share/elasticsearch/config/certs/tls.crt"
+#     xpack.security.http.ssl.certificate_authorities: "/usr/share/elasticsearch/config/certs/homelab-ca.crt"
+
+esJvmOptions: {}
+
+extraEnvs: []
+#  - name: "ELASTIC_PASSWORD"
+#    valueFrom:
+#      secretKeyRef:
+#        name: "elasticsearch-master-credentials"
+#        key: "password"
+#  - name: "ELASTIC_USERNAME"
+#    valueFrom:
+#      secretKeyRef:
+#        name: "elasticsearch-master-credentials"
+#        key: "username"
+
+envFrom: []
+
+secretMounts: []
+#  - name: elastic-certificates
+#    secretName: elastic-certificates
+#    path: /usr/share/elasticsearch/config/certs
+#    defaultMode: 0755
+
+hostAliases: []
+
+image: "docker.elastic.co/elasticsearch/elasticsearch"
+imageTag: "7.17.3"
+imagePullPolicy: "IfNotPresent"
+
+podAnnotations:
+  {}
+
+labels: {}
+
+esJavaOpts: "" # example: "-Xmx1g -Xms1g"
+
+resources:
+  requests:
+    cpu: "200m"
+    memory: "700M"
+  limits:
+    cpu: "800m"
+    memory: "1000M"
+
+initResources: {}
+
+networkHost: "0.0.0.0"
+
+volumeClaimTemplate:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 30Gi
+
+rbac:
+  create: false
+  serviceAccountAnnotations: {}
+  serviceAccountName: ""
+  automountToken: true
+
+podSecurityPolicy:
+  create: false
+  name: ""
+  spec:
+    privileged: true
+    fsGroup:
+      rule: RunAsAny
+    runAsUser:
+      rule: RunAsAny
+    seLinux:
+      rule: RunAsAny
+    supplementalGroups:
+      rule: RunAsAny
+    volumes:
+      - secret
+      - configMap
+      - persistentVolumeClaim
+      - emptyDir
+
+persistence:
+  enabled: true
+  labels:
+    enabled: false
+  annotations: {}
+
+extraVolumes: []
+
+extraVolumeMounts: []
+
+extraContainers: []
+
+extraInitContainers:
+  - name: file-permissions
+    image: busybox
+    command: ['chown', '-R', '1000:1000', '/usr/share/elasticsearch/']
+    volumeMounts:
+      - mountPath: /usr/share/elasticsearch/data
+        name: elasticsearch-master
+    securityContext:
+      privileged: true
+      runAsUser: 0
+
+priorityClassName: ""
+
+antiAffinityTopologyKey: "kubernetes.io/hostname"
+
+antiAffinity: "hard"
+
+nodeAffinity: {}
+
+podManagementPolicy: "Parallel"
+
+enableServiceLinks: true
+
+protocol: http
+httpPort: 9200
+transportPort: 9300
+
+service:
+  enabled: true
+  labels: {}
+  labelsHeadless: {}
+  type: ClusterIP
+  publishNotReadyAddresses: false
+  nodePort: ""
+  annotations: {}
+  httpPortName: http
+  transportPortName: transport
+  loadBalancerIP: ""
+  loadBalancerSourceRanges: []
+  externalTrafficPolicy: ""
+
+updateStrategy: RollingUpdate
+
+maxUnavailable: 1
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+
+terminationGracePeriod: 120
+
+sysctlVmMaxMapCount: 262144
+
+readinessProbe:
+  failureThreshold: 3
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  successThreshold: 3
+  timeoutSeconds: 5
+
+clusterHealthCheckParams: "wait_for_status=green&timeout=1s"
+
+schedulerName: ""
+
+imagePullSecrets: []
+nodeSelector: {}
+tolerations: []
+
+ingress:
+  enabled: false
+  annotations: {}
+  className: "nginx"
+  pathtype: ImplementationSpecific
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+  tls: []
+
+nameOverride: ""
+fullnameOverride: ""
+healthNameOverride: ""
+
+lifecycle:
+  {}
+
+sysctlInitContainer:
+  enabled: true
+
+keystore: []
+
+networkPolicy:
+  http:
+    enabled: false
+  transport:
+    enabled: false
+tests:
+  enabled: true
+
+fsGroup: ""
